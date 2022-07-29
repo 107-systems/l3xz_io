@@ -4,54 +4,47 @@
  * Contributors: https://github.com/107-systems/l3xz_io/graphs/contributors.
  */
 
-#ifndef COMMON_THREADING_THREADSTATS_H_
-#define COMMON_THREADING_THREADSTATS_H_
+#ifndef GLUE_L3XZ_ELROB2022_DYNAMIXEL_ANGLE_POSITION_SENSOR_BULK_READER_H_
+#define GLUE_L3XZ_ELROB2022_DYNAMIXEL_ANGLE_POSITION_SENSOR_BULK_READER_H_
 
 /**************************************************************************************
  * INCLUDES
  **************************************************************************************/
 
-#include <list>
-#include <mutex>
-#include <thread>
-#include <string>
-#include <iostream>
+#include <map>
+#include <tuple>
+
+#include <driver/dynamixel/MX28.h>
+
+#include <types/LegJointKey.h>
+#include <types/HeadJointKey.h>
+
+#include <glue/DynamixelIdList.h>
+#include <glue/DynamixelServoName.h>
 
 /**************************************************************************************
  * NAMESPACE
  **************************************************************************************/
 
-namespace common::threading
+namespace glue
 {
 
 /**************************************************************************************
  * CLASS DECLARATION
  **************************************************************************************/
 
-class ThreadStats
+class DynamixelAnglePositionReader
 {
 public:
+  DynamixelAnglePositionReader() = delete;
 
-  void add   (std::string const & thd_name);
-  void remove(std::string const & thd_name);
-
-  friend std::ostream & operator << (std::ostream & os, ThreadStats & stats);
-
-private:
-
-  typedef struct
-  {
-    std::string name;
-  } Data;
-
-  std::list<Data> _data;
-  std::mutex _data_mtx;
+  static std::tuple<std::map<LegJointKey, float>, std::map<HeadJointKey, float>> doBulkRead(dynamixel::SharedMX28 mx28_ctrl);
 };
 
 /**************************************************************************************
  * NAMESPACE
  **************************************************************************************/
 
-} /* common::threading */
+} /* glue */
 
-#endif /* COMMON_THREADING_THREADSTATS_H_ */
+#endif /* GLUE_L3XZ_ELROB2022_DYNAMIXEL_ANGLE_POSITION_SENSOR_BULK_READER_H_ */

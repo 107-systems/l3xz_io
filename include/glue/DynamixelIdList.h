@@ -4,64 +4,32 @@
  * Contributors: https://github.com/107-systems/l3xz_io/graphs/contributors.
  */
 
-#ifndef COMMON_THREADING_THREADBASE_H_
-#define COMMON_THREADING_THREADBASE_H_
+#ifndef GLUE_DYNAMIXEL_ID_LIST_H_
+#define GLUE_DYNAMIXEL_ID_LIST_H_
 
 /**************************************************************************************
  * INCLUDES
  **************************************************************************************/
 
-#include <string>
-#include <thread>
-#include <atomic>
-#include <iostream>
-
-#include "ThreadStats.h"
+#include <driver/dynamixel/Dynamixel.h>
 
 /**************************************************************************************
  * NAMESPACE
  **************************************************************************************/
 
-namespace common::threading
+namespace glue
 {
 
 /**************************************************************************************
- * CLASS DECLARATION
+ * CONSTANT
  **************************************************************************************/
 
-class ThreadBase
-{
-public:
-
-   ThreadBase(std::string const & thread_name);
-  ~ThreadBase();
-
-  static void stats(std::ostream & out) {
-    out << _stats << std::endl;
-  }
-
-protected:
-
-  void startThread();
-
-  virtual void setup() = 0;
-  virtual void loop () = 0;
-
-private:
-
-  std::string const & _thread_name;
-  std::atomic<bool> _thread_running;
-  std::thread _thd;
-  static ThreadStats _stats;
-
-  void threadFunc();
-  void stopThread();
-};
+static dynamixel::Dynamixel::IdVect const DYNAMIXEL_ID_LIST{1,2,3,4,5,6,7,8};
 
 /**************************************************************************************
  * NAMESPACE
  **************************************************************************************/
 
-} /* common::threading */
+} /* glue */
 
-#endif /* COMMON_THREADING_THREADBASE_H_ */
+#endif /* GLUE_DYNAMIXEL_ID_LIST_H_ */

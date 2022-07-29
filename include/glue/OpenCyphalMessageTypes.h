@@ -4,33 +4,33 @@
  * Contributors: https://github.com/107-systems/l3xz_io/graphs/contributors.
  */
 
-#ifndef GLUE_L3XZ_ELROB2022_CONST_H_
-#define GLUE_L3XZ_ELROB2022_CONST_H_
+#ifndef GLUE_OPEN_CYPHAL_MESSAGE_TYPES_H_
+#define GLUE_OPEN_CYPHAL_MESSAGE_TYPES_H_
 
 /**************************************************************************************
  * INCLUDES
  **************************************************************************************/
 
-#include <driver/dynamixel/MX28.h>
-#include <driver/dynamixel/Dynamixel.h>
+#include <phy/opencyphal/Types.h>
 
 /**************************************************************************************
  * NAMESPACE
  **************************************************************************************/
 
-namespace glue::l3xz::ELROB2022
+namespace glue
 {
 
 /**************************************************************************************
- * CONSTANT
+ * TYPEDEF
  **************************************************************************************/
 
-static driver::Dynamixel::IdVect const DYNAMIXEL_ID_VECT{1,2,3,4,5,6,7,8};
+typedef uavcan::primitive::scalar::Real32_1_0<1002> OpenCyphalFemurAnglePositionDegreeMessage;
+typedef uavcan::primitive::scalar::Real32_1_0<1003> OpenCyphalTibiaAnglePositionDegreeMessage;
 
 /**************************************************************************************
  * NAMESPACE
  **************************************************************************************/
 
-} /* glue::l3xz::ELROB2022 */
+} /* glue */
 
-#endif /* GLUE_L3XZ_ELROB2022_CONST_H_ */
+#endif /* GLUE_OPEN_CYPHAL_MESSAGE_TYPES_H_ */

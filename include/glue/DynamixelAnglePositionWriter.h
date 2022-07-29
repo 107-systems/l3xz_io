@@ -4,49 +4,51 @@
  * Contributors: https://github.com/107-systems/l3xz_io/graphs/contributors.
  */
 
-#ifndef KINEMATIC_FK_INPUT_H_
-#define KINEMATIC_FK_INPUT_H_
+#ifndef GLUE_L3XZ_ELROB2022_DYNAMIXEL_ANGLE_POSITION_ACTUATOR_BULK_WRITER_H_
+#define GLUE_L3XZ_ELROB2022_DYNAMIXEL_ANGLE_POSITION_ACTUATOR_BULK_WRITER_H_
 
 /**************************************************************************************
  * INCLUDES
  **************************************************************************************/
 
-#include <cmath>
+#include <types/LegJointKey.h>
+#include <types/HeadJointKey.h>
 
-#include <kdl/jntarray.hpp>
+#include <driver/dynamixel/MX28.h>
+
+#include <glue/DynamixelServoName.h>
 
 /**************************************************************************************
  * NAMESPACE
  **************************************************************************************/
 
-namespace common::kinematic
+namespace glue
 {
 
 /**************************************************************************************
  * CLASS DECLARATION
  **************************************************************************************/
 
-class FK_Input
+class DynamixelAnglePositionWriter
 {
 public:
-  FK_Input(double const coxa_angle_deg, double const femur_angle_deg, double const tibia_angle_deg)
-  {
-    _joint_positions = KDL::JntArray(3);
-    _joint_positions(0) = coxa_angle_deg  * M_PI / 180.0;
-    _joint_positions(1) = femur_angle_deg * M_PI / 180.0;
-    _joint_positions(2) = tibia_angle_deg * M_PI / 180.0;
-  }
+  DynamixelAnglePositionWriter();
 
-  inline KDL::JntArray joint_positions() const { return _joint_positions; }
+  void update(LegJointKey const joint, float const angle_deg);
+  void update(HeadJointKey const joint, float const angle_deg);
+  bool doBulkWrite(dynamixel::SharedMX28 mx28_ctrl);
+
 
 private:
-  KDL::JntArray _joint_positions;
+  std::map<dynamixel::Dynamixel::Id, float> _dynamixel_angle_map;
+
+  void update(DynamixelServoName const name, float const angle_deg);
 };
 
 /**************************************************************************************
  * NAMESPACE
  **************************************************************************************/
 
-} /* common::kinematic */
+} /* glue */
 
-#endif /* KINEMATIC_FK_INPUT_H_ */
+#endif /* GLUE_L3XZ_ELROB2022_DYNAMIXEL_ANGLE_POSITION_ACTUATOR_BULK_WRITER_H_ */

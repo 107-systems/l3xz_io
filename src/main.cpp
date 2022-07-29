@@ -19,10 +19,8 @@
 
 #include <dynamixel_sdk.h>
 
-#include <Types.h>
+#include <types/LegJointKey.h>
 #include <Const.h>
-
-#include <gait/GaitController.h>
 
 #include <driver/ssc32/SSC32.h>
 #include <driver/orel20/Orel20.h>
@@ -33,35 +31,27 @@
 #include <phy/opencyphal/Node.hpp>
 #include <phy/opencyphal/SocketCAN.h>
 
-#include <glue/l3xz/ELROB2022/Const.h>
+#include <glue/DynamixelIdList.h>
 #include <glue/l3xz/ELROB2022/SSC32PWMActuator.h>
 #include <glue/l3xz/ELROB2022/SSC32PWMActuatorBulkwriter.h>
 #include <glue/l3xz/ELROB2022/SSC32ValveActuator.h>
 #include <glue/l3xz/ELROB2022/SSC32AnglePositionActuator.h>
-#include <glue/l3xz/ELROB2022/DynamixelAnglePositionSensor.h>
-#include <glue/l3xz/ELROB2022/DynamixelAnglePositionSensorBulkReader.h>
-#include <glue/l3xz/ELROB2022/DynamixelAnglePositionActuator.h>
-#include <glue/l3xz/ELROB2022/DynamixelAnglePositionActuatorBulkWriter.h>
-#include <glue/l3xz/ELROB2022/OpenCyphalAnglePositionSensor.h>
-#include <glue/l3xz/ELROB2022/OpenCyphalAnglePositionSensorBulkReader.h>
+#include <glue/HydraulicAnglePositionReader.h>
 #include <glue/l3xz/ELROB2022/OpenCyphalBumperSensor.h>
 #include <glue/l3xz/ELROB2022/OpenCyphalBumperSensorBulkReader.h>
 #include <glue/l3xz/ELROB2022/Orel20RPMActuator.h>
-#include <glue/l3xz/ELROB2022/OpenCyphalLEDActuator.h>
 
-#include <ros/RosBrigdeNode.h>
+#include <IoNode.h>
 
 /**************************************************************************************
  * FUNCTION DECLARATION
  **************************************************************************************/
 
-bool init_dynamixel  (driver::SharedMX28 & mx28_ctrl);
-void deinit_dynamixel(driver::SharedMX28 & mx28_ctrl);
+bool init_dynamixel  (dynamixel::SharedMX28 & mx28_ctrl);
+void deinit_dynamixel(dynamixel::SharedMX28 & mx28_ctrl);
 
 bool init_open_cyphal(phy::opencyphal::Node & open_cyphal_node,
-                      glue::l3xz::ELROB2022::OpenCyphalAnglePositionSensorBulkReader & open_cyphal_angle_position_sensor_bulk_reader,
-                      glue::l3xz::ELROB2022::OpenCyphalBumperSensorBulkReader & open_cyphal_bumper_sensor_bulk_reader,
-                      std::shared_ptr<l3xz::RosBridgeNode> ros_brigde_node);
+                      glue::l3xz::ELROB2022::OpenCyphalBumperSensorBulkReader & open_cyphal_bumper_sensor_bulk_reader);
 
 void deinit_orel20(driver::SharedOrel20 orel20_ctrl);
 
@@ -93,45 +83,12 @@ int main(int argc, char **argv) try
    * DYNAMIXEL
    **************************************************************************************/
 
-  auto dynamixel_ctrl = std::make_shared<driver::Dynamixel>(DYNAMIXEL_DEVICE_NAME, DYNAMIXEL_PROTOCOL_VERSION, DYNAMIXEL_BAUD_RATE);
-  auto mx28_ctrl = std::make_shared<driver::MX28>(dynamixel_ctrl);
+  auto dynamixel_ctrl = std::make_shared<dynamixel::Dynamixel>(DYNAMIXEL_DEVICE_NAME, DYNAMIXEL_PROTOCOL_VERSION, DYNAMIXEL_BAUD_RATE);
+  auto mx28_ctrl = std::make_shared<dynamixel::MX28>(dynamixel_ctrl);
 
   if (!init_dynamixel(mx28_ctrl))
     printf("[ERROR] init_dynamixel failed.");
   printf("[INFO] init_dynamixel successfully completed.");
-
-  auto angle_sensor_left_front_coxa   = std::make_shared<glue::l3xz::ELROB2022::DynamixelAnglePositionSensor>("L/F Coxa");
-  auto angle_sensor_left_middle_coxa  = std::make_shared<glue::l3xz::ELROB2022::DynamixelAnglePositionSensor>("L/M Coxa");
-  auto angle_sensor_left_back_coxa    = std::make_shared<glue::l3xz::ELROB2022::DynamixelAnglePositionSensor>("L/B Coxa");
-  auto angle_sensor_right_back_coxa   = std::make_shared<glue::l3xz::ELROB2022::DynamixelAnglePositionSensor>("R/B Coxa");
-  auto angle_sensor_right_middle_coxa = std::make_shared<glue::l3xz::ELROB2022::DynamixelAnglePositionSensor>("R/M Coxa");
-  auto angle_sensor_right_front_coxa  = std::make_shared<glue::l3xz::ELROB2022::DynamixelAnglePositionSensor>("R/F Coxa");
-  auto angle_sensor_sensor_head_pan   = std::make_shared<glue::l3xz::ELROB2022::DynamixelAnglePositionSensor>("HEAD Pan");
-  auto angle_sensor_sensor_head_tilt  = std::make_shared<glue::l3xz::ELROB2022::DynamixelAnglePositionSensor>("HEAD Tilt");
-
-  glue::l3xz::ELROB2022::DynamixelAnglePositionSensorBulkReader dynamixel_angle_position_sensor_bulk_reader
-  (
-    mx28_ctrl,
-    angle_sensor_left_front_coxa,
-    angle_sensor_left_middle_coxa,
-    angle_sensor_left_back_coxa,
-    angle_sensor_right_back_coxa,
-    angle_sensor_right_middle_coxa,
-    angle_sensor_right_front_coxa,
-    angle_sensor_sensor_head_pan,
-    angle_sensor_sensor_head_tilt
-  );
-
-  glue::l3xz::ELROB2022::DynamixelAnglePositionActuatorBulkWriter dynamixel_angle_position_actuator_bulk_writer(mx28_ctrl);
-
-  auto angle_actuator_left_front_coxa   = std::make_shared<glue::l3xz::ELROB2022::DynamixelAnglePositionActuator>("L/F Coxa",  1, [&dynamixel_angle_position_actuator_bulk_writer](driver::Dynamixel::Id const id, float const angle_deg) { dynamixel_angle_position_actuator_bulk_writer.update(id, angle_deg); });
-  auto angle_actuator_left_middle_coxa  = std::make_shared<glue::l3xz::ELROB2022::DynamixelAnglePositionActuator>("L/M Coxa",  2, [&dynamixel_angle_position_actuator_bulk_writer](driver::Dynamixel::Id const id, float const angle_deg) { dynamixel_angle_position_actuator_bulk_writer.update(id, angle_deg); });
-  auto angle_actuator_left_back_coxa    = std::make_shared<glue::l3xz::ELROB2022::DynamixelAnglePositionActuator>("L/B Coxa",  3, [&dynamixel_angle_position_actuator_bulk_writer](driver::Dynamixel::Id const id, float const angle_deg) { dynamixel_angle_position_actuator_bulk_writer.update(id, angle_deg); });
-  auto angle_actuator_right_back_coxa   = std::make_shared<glue::l3xz::ELROB2022::DynamixelAnglePositionActuator>("R/B Coxa",  4, [&dynamixel_angle_position_actuator_bulk_writer](driver::Dynamixel::Id const id, float const angle_deg) { dynamixel_angle_position_actuator_bulk_writer.update(id, angle_deg); });
-  auto angle_actuator_right_middle_coxa = std::make_shared<glue::l3xz::ELROB2022::DynamixelAnglePositionActuator>("R/M Coxa",  5, [&dynamixel_angle_position_actuator_bulk_writer](driver::Dynamixel::Id const id, float const angle_deg) { dynamixel_angle_position_actuator_bulk_writer.update(id, angle_deg); });
-  auto angle_actuator_right_front_coxa  = std::make_shared<glue::l3xz::ELROB2022::DynamixelAnglePositionActuator>("R/F Coxa",  6, [&dynamixel_angle_position_actuator_bulk_writer](driver::Dynamixel::Id const id, float const angle_deg) { dynamixel_angle_position_actuator_bulk_writer.update(id, angle_deg); });
-  auto angle_actuator_sensor_head_pan   = std::make_shared<glue::l3xz::ELROB2022::DynamixelAnglePositionActuator>("HEAD Pan",  7, [&dynamixel_angle_position_actuator_bulk_writer](driver::Dynamixel::Id const id, float const angle_deg) { dynamixel_angle_position_actuator_bulk_writer.update(id, angle_deg); });
-  auto angle_actuator_sensor_head_tilt  = std::make_shared<glue::l3xz::ELROB2022::DynamixelAnglePositionActuator>("HEAD Tilt", 8, [&dynamixel_angle_position_actuator_bulk_writer](driver::Dynamixel::Id const id, float const angle_deg) { dynamixel_angle_position_actuator_bulk_writer.update(id, angle_deg); });
 
   /**************************************************************************************
    * OPENCYPHAL
@@ -139,36 +96,6 @@ int main(int argc, char **argv) try
 
   phy::opencyphal::SocketCAN open_cyphal_can_if("can0", false);
   phy::opencyphal::Node open_cyphal_node(open_cyphal_can_if);
-
-  auto angle_sensor_left_front_femur   = std::make_shared<glue::l3xz::ELROB2022::OpenCyphalAnglePositionSensor>("L/F Femur");
-  auto angle_sensor_left_front_tibia   = std::make_shared<glue::l3xz::ELROB2022::OpenCyphalAnglePositionSensor>("L/F Tibia");
-  auto angle_sensor_left_middle_femur  = std::make_shared<glue::l3xz::ELROB2022::OpenCyphalAnglePositionSensor>("L/M Femur");
-  auto angle_sensor_left_middle_tibia  = std::make_shared<glue::l3xz::ELROB2022::OpenCyphalAnglePositionSensor>("L/M Tibia");
-  auto angle_sensor_left_back_femur    = std::make_shared<glue::l3xz::ELROB2022::OpenCyphalAnglePositionSensor>("L/B Femur");
-  auto angle_sensor_left_back_tibia    = std::make_shared<glue::l3xz::ELROB2022::OpenCyphalAnglePositionSensor>("L/B Tibia");
-
-  auto angle_sensor_right_back_femur   = std::make_shared<glue::l3xz::ELROB2022::OpenCyphalAnglePositionSensor>("R/B Femur");
-  auto angle_sensor_right_back_tibia   = std::make_shared<glue::l3xz::ELROB2022::OpenCyphalAnglePositionSensor>("R/B Tibia");
-  auto angle_sensor_right_middle_femur = std::make_shared<glue::l3xz::ELROB2022::OpenCyphalAnglePositionSensor>("R/M Femur");
-  auto angle_sensor_right_middle_tibia = std::make_shared<glue::l3xz::ELROB2022::OpenCyphalAnglePositionSensor>("R/M Tibia");
-  auto angle_sensor_right_front_femur  = std::make_shared<glue::l3xz::ELROB2022::OpenCyphalAnglePositionSensor>("R/F Femur");
-  auto angle_sensor_right_front_tibia  = std::make_shared<glue::l3xz::ELROB2022::OpenCyphalAnglePositionSensor>("R/F Tibia");
-
-  glue::l3xz::ELROB2022::OpenCyphalAnglePositionSensorBulkReader open_cyphal_angle_position_sensor_bulk_reader
-  (
-    angle_sensor_left_front_femur,
-    angle_sensor_left_front_tibia,
-    angle_sensor_left_middle_femur,
-    angle_sensor_left_middle_tibia,
-    angle_sensor_left_back_femur,
-    angle_sensor_left_back_tibia,
-    angle_sensor_right_back_femur,
-    angle_sensor_right_back_tibia,
-    angle_sensor_right_middle_femur,
-    angle_sensor_right_middle_tibia,
-    angle_sensor_right_front_femur,
-    angle_sensor_right_front_tibia
-  );
 
   auto tibia_tip_bumper_left_front   = std::make_shared<glue::l3xz::ELROB2022::OpenCyphalBumperSensor>("L/F");
   auto tibia_tip_bumper_left_middle  = std::make_shared<glue::l3xz::ELROB2022::OpenCyphalBumperSensor>("L/M");
@@ -186,9 +113,6 @@ int main(int argc, char **argv) try
     tibia_tip_bumper_right_middle,
     tibia_tip_bumper_right_front
   );
-
-  glue::l3xz::ELROB2022::OpenCyphalLEDActuator open_cyphal_led_actuator(open_cyphal_node);
-  open_cyphal_led_actuator.setBlinkMode(glue::l3xz::ELROB2022::OpenCyphalLEDActuator::BlinkMode::Green);
 
   /**************************************************************************************
    * OREL 20 / DRONECAN
@@ -239,77 +163,23 @@ int main(int argc, char **argv) try
   glue::l3xz::ELROB2022::SSC32ValveActuator valve_actuator_back_right_tibia  ("R/B Tibia", pwm_actuator_valve_back_right_tibia);
 
 
-  auto angle_actuator_left_front_femur       = std::make_shared<glue::l3xz::ELROB2022::SSC32AnglePositionActuator>("L/F Femur", valve_actuator_front_left_femur,   angle_sensor_left_front_femur);
-  auto angle_actuator_left_front_tibia       = std::make_shared<glue::l3xz::ELROB2022::SSC32AnglePositionActuator>("L/F Tibia", valve_actuator_front_left_tibia,   angle_sensor_left_front_tibia);
-  auto angle_actuator_left_middle_femur      = std::make_shared<glue::l3xz::ELROB2022::SSC32AnglePositionActuator>("L/M Femur", valve_actuator_middle_left_femur,  angle_sensor_left_middle_femur);
-  auto angle_actuator_left_middle_tibia      = std::make_shared<glue::l3xz::ELROB2022::SSC32AnglePositionActuator>("L/M Tibia", valve_actuator_middle_left_tibia,  angle_sensor_left_middle_tibia);
-  auto angle_actuator_left_back_femur        = std::make_shared<glue::l3xz::ELROB2022::SSC32AnglePositionActuator>("L/B Femur", valve_actuator_back_left_femur,    angle_sensor_left_back_femur);
-  auto angle_actuator_left_back_tibia        = std::make_shared<glue::l3xz::ELROB2022::SSC32AnglePositionActuator>("L/B Tibia", valve_actuator_back_left_tibia,    angle_sensor_left_back_tibia);
+  auto angle_actuator_left_front_femur       = std::make_shared<glue::l3xz::ELROB2022::SSC32AnglePositionActuator>("L/F Femur", valve_actuator_front_left_femur,   nullptr);
+  auto angle_actuator_left_front_tibia       = std::make_shared<glue::l3xz::ELROB2022::SSC32AnglePositionActuator>("L/F Tibia", valve_actuator_front_left_tibia,   nullptr);
+  auto angle_actuator_left_middle_femur      = std::make_shared<glue::l3xz::ELROB2022::SSC32AnglePositionActuator>("L/M Femur", valve_actuator_middle_left_femur,  nullptr);
+  auto angle_actuator_left_middle_tibia      = std::make_shared<glue::l3xz::ELROB2022::SSC32AnglePositionActuator>("L/M Tibia", valve_actuator_middle_left_tibia,  nullptr);
+  auto angle_actuator_left_back_femur        = std::make_shared<glue::l3xz::ELROB2022::SSC32AnglePositionActuator>("L/B Femur", valve_actuator_back_left_femur,    nullptr);
+  auto angle_actuator_left_back_tibia        = std::make_shared<glue::l3xz::ELROB2022::SSC32AnglePositionActuator>("L/B Tibia", valve_actuator_back_left_tibia,    nullptr);
 
-  auto angle_actuator_right_front_femur      = std::make_shared<glue::l3xz::ELROB2022::SSC32AnglePositionActuator>("R/F Femur", valve_actuator_front_right_femur,  angle_sensor_right_front_femur);
-  auto angle_actuator_right_front_tibia      = std::make_shared<glue::l3xz::ELROB2022::SSC32AnglePositionActuator>("R/F Tibia", valve_actuator_front_right_tibia,  angle_sensor_right_front_tibia);
-  auto angle_actuator_right_middle_femur     = std::make_shared<glue::l3xz::ELROB2022::SSC32AnglePositionActuator>("R/M Femur", valve_actuator_middle_right_femur, angle_sensor_right_middle_femur);
-  auto angle_actuator_right_middle_tibia     = std::make_shared<glue::l3xz::ELROB2022::SSC32AnglePositionActuator>("R/M Tibia", valve_actuator_middle_right_tibia, angle_sensor_right_middle_tibia);
-  auto angle_actuator_right_back_femur       = std::make_shared<glue::l3xz::ELROB2022::SSC32AnglePositionActuator>("R/B Femur", valve_actuator_back_right_femur,   angle_sensor_right_back_femur);
-  auto angle_actuator_right_back_tibia       = std::make_shared<glue::l3xz::ELROB2022::SSC32AnglePositionActuator>("R/B Tibia", valve_actuator_back_right_tibia,   angle_sensor_right_back_tibia);
+  auto angle_actuator_right_front_femur      = std::make_shared<glue::l3xz::ELROB2022::SSC32AnglePositionActuator>("R/F Femur", valve_actuator_front_right_femur,  nullptr);
+  auto angle_actuator_right_front_tibia      = std::make_shared<glue::l3xz::ELROB2022::SSC32AnglePositionActuator>("R/F Tibia", valve_actuator_front_right_tibia,  nullptr);
+  auto angle_actuator_right_middle_femur     = std::make_shared<glue::l3xz::ELROB2022::SSC32AnglePositionActuator>("R/M Femur", valve_actuator_middle_right_femur, nullptr);
+  auto angle_actuator_right_middle_tibia     = std::make_shared<glue::l3xz::ELROB2022::SSC32AnglePositionActuator>("R/M Tibia", valve_actuator_middle_right_tibia, nullptr);
+  auto angle_actuator_right_back_femur       = std::make_shared<glue::l3xz::ELROB2022::SSC32AnglePositionActuator>("R/B Femur", valve_actuator_back_right_femur,   nullptr);
+  auto angle_actuator_right_back_tibia       = std::make_shared<glue::l3xz::ELROB2022::SSC32AnglePositionActuator>("R/B Tibia", valve_actuator_back_right_tibia,   nullptr);
 
   /**************************************************************************************
    * ALL ANGLE POSITION ACTUATORS
    **************************************************************************************/
-
-  std::map<LegJointKey, common::actuator::interface::SharedAnglePositionActuator> angle_position_actuator_map =
-  {
-    {make_key(Leg::LeftFront,   Joint::Coxa),  angle_actuator_left_front_coxa},
-    {make_key(Leg::LeftFront,   Joint::Femur), angle_actuator_left_front_femur},
-    {make_key(Leg::LeftFront,   Joint::Tibia), angle_actuator_left_front_tibia},
-    {make_key(Leg::LeftMiddle,  Joint::Coxa),  angle_actuator_left_middle_coxa},
-    {make_key(Leg::LeftMiddle,  Joint::Femur), angle_actuator_left_middle_femur},
-    {make_key(Leg::LeftMiddle,  Joint::Tibia), angle_actuator_left_middle_tibia},
-    {make_key(Leg::LeftBack,    Joint::Coxa),  angle_actuator_left_back_coxa},
-    {make_key(Leg::LeftBack,    Joint::Femur), angle_actuator_left_back_femur},
-    {make_key(Leg::LeftBack,    Joint::Tibia), angle_actuator_left_back_tibia},
-    {make_key(Leg::RightFront,  Joint::Coxa),  angle_actuator_right_front_coxa},
-    {make_key(Leg::RightFront,  Joint::Femur), angle_actuator_right_front_femur},
-    {make_key(Leg::RightFront,  Joint::Tibia), angle_actuator_right_front_tibia},
-    {make_key(Leg::RightMiddle, Joint::Coxa),  angle_actuator_right_middle_coxa},
-    {make_key(Leg::RightMiddle, Joint::Femur), angle_actuator_right_middle_femur},
-    {make_key(Leg::RightMiddle, Joint::Tibia), angle_actuator_right_middle_tibia},
-    {make_key(Leg::RightBack,   Joint::Coxa),  angle_actuator_right_back_coxa},
-    {make_key(Leg::RightBack,   Joint::Femur), angle_actuator_right_back_femur},
-    {make_key(Leg::RightBack,   Joint::Tibia), angle_actuator_right_back_tibia}
-  };
-
-  std::map<LegJointKey, common::sensor::interface::SharedAnglePositionSensor> angle_position_sensor_map =
-  {
-    {make_key(Leg::LeftFront,   Joint::Coxa),  angle_sensor_left_front_coxa},
-    {make_key(Leg::LeftFront,   Joint::Femur), angle_sensor_left_front_femur},
-    {make_key(Leg::LeftFront,   Joint::Tibia), angle_sensor_left_front_tibia},
-    {make_key(Leg::LeftMiddle,  Joint::Coxa),  angle_sensor_left_middle_coxa},
-    {make_key(Leg::LeftMiddle,  Joint::Femur), angle_sensor_left_middle_femur},
-    {make_key(Leg::LeftMiddle,  Joint::Tibia), angle_sensor_left_middle_tibia},
-    {make_key(Leg::LeftBack,    Joint::Coxa),  angle_sensor_left_back_coxa},
-    {make_key(Leg::LeftBack,    Joint::Femur), angle_sensor_left_back_femur},
-    {make_key(Leg::LeftBack,    Joint::Tibia), angle_sensor_left_back_tibia},
-    {make_key(Leg::RightFront,  Joint::Coxa),  angle_sensor_right_front_coxa},
-    {make_key(Leg::RightFront,  Joint::Femur), angle_sensor_right_front_femur},
-    {make_key(Leg::RightFront,  Joint::Tibia), angle_sensor_right_front_tibia},
-    {make_key(Leg::RightMiddle, Joint::Coxa),  angle_sensor_right_middle_coxa},
-    {make_key(Leg::RightMiddle, Joint::Femur), angle_sensor_right_middle_femur},
-    {make_key(Leg::RightMiddle, Joint::Tibia), angle_sensor_right_middle_tibia},
-    {make_key(Leg::RightBack,   Joint::Coxa),  angle_sensor_right_back_coxa},
-    {make_key(Leg::RightBack,   Joint::Femur), angle_sensor_right_back_femur},
-    {make_key(Leg::RightBack,   Joint::Tibia), angle_sensor_right_back_tibia}
-  };
-
-  /* This map contains the angle offsets of all the sensors
-   * angles as reported by the leg controllers. At initialization
-   * these are zero and are then set during the calibration
-   * state.
-   **/
-  bool is_angle_position_sensor_offset_calibration_complete = false;
-  std::map<LegJointKey, float> angle_position_sensor_offset_map;
-  for (auto [leg, joint] : HYDRAULIC_LEG_JOINT_LIST)
-    angle_position_sensor_offset_map[make_key(leg, joint)] = 0.0f;
 
   std::map<Leg, common::sensor::interface::SharedBumperSensor> bumper_sensor_map =
   {
@@ -325,32 +195,20 @@ int main(int argc, char **argv) try
    * STATE
    **************************************************************************************/
 
-  auto ros_bridge_node = std::make_shared<l3xz::RosBridgeNode>
+  auto io_node = std::make_shared<l3xz::IoNode>
   (
+    open_cyphal_node,
+    mx28_ctrl,
     orel20_ctrl,
     ssc32_ctrl,
-    dynamixel_angle_position_sensor_bulk_reader,
-    open_cyphal_angle_position_sensor_bulk_reader,
     open_cyphal_bumper_sensor_bulk_reader,
-    open_cyphal_led_actuator,
     orel20_rpm_actuator,
     ssc32_pwm_actuator_bulk_driver,
-    dynamixel_angle_position_actuator_bulk_writer,
-    is_angle_position_sensor_offset_calibration_complete,
-    angle_position_sensor_map,
-    angle_position_sensor_offset_map,
-    bumper_sensor_map,
-    angle_actuator_sensor_head_pan,
-    angle_actuator_sensor_head_tilt,
-    angle_position_actuator_map,
-    angle_sensor_sensor_head_pan,
-    angle_sensor_sensor_head_tilt
+    bumper_sensor_map
   );
 
   if (!init_open_cyphal(open_cyphal_node,
-                        open_cyphal_angle_position_sensor_bulk_reader,
-                        open_cyphal_bumper_sensor_bulk_reader,
-                        ros_bridge_node))
+                        open_cyphal_bumper_sensor_bulk_reader))
   {
     printf("[ERROR] init_open_cyphal failed.");
   }
@@ -360,7 +218,7 @@ int main(int argc, char **argv) try
    * MAIN LOOP
    **************************************************************************************/
 
-  rclcpp::spin(ros_bridge_node);
+  rclcpp::spin(io_node);
   rclcpp::shutdown();
 
   printf("[WARNING] STOPPING");
@@ -386,9 +244,9 @@ catch (...)
  * FUNCTION DECLARATION
  **************************************************************************************/
 
-bool init_dynamixel(driver::SharedMX28 & mx28_ctrl)
+bool init_dynamixel(dynamixel::SharedMX28 & mx28_ctrl)
 {
-  std::optional<driver::Dynamixel::IdVect> opt_act_id_vect = mx28_ctrl->discover();
+  std::optional<dynamixel::Dynamixel::IdVect> opt_act_id_vect = mx28_ctrl->discover();
 
   if (!opt_act_id_vect) {
     printf("[ERROR] Zero MX-28 servos detected.");
@@ -401,7 +259,7 @@ bool init_dynamixel(driver::SharedMX28 & mx28_ctrl)
   printf("[INFO] Detected Dynamixel MX-28: { %s}", act_id_list.str().c_str());
 
   bool all_req_id_found = true;
-  for (auto req_id : glue::l3xz::ELROB2022::DYNAMIXEL_ID_VECT)
+  for (auto req_id : glue::DYNAMIXEL_ID_LIST)
   {
     bool const req_id_found = std::count(opt_act_id_vect.value().begin(),
                                          opt_act_id_vect.value().end(),
@@ -414,20 +272,18 @@ bool init_dynamixel(driver::SharedMX28 & mx28_ctrl)
   if (!all_req_id_found)
     return false;
 
-  mx28_ctrl->torqueOn(glue::l3xz::ELROB2022::DYNAMIXEL_ID_VECT);
+  mx28_ctrl->torqueOn(glue::DYNAMIXEL_ID_LIST);
 
   return true;
 }
 
-void deinit_dynamixel(driver::SharedMX28 & mx28_ctrl)
+void deinit_dynamixel(dynamixel::SharedMX28 & mx28_ctrl)
 {
-  mx28_ctrl->torqueOff(glue::l3xz::ELROB2022::DYNAMIXEL_ID_VECT);
+  mx28_ctrl->torqueOff(glue::DYNAMIXEL_ID_LIST);
 }
 
 bool init_open_cyphal(phy::opencyphal::Node & open_cyphal_node,
-                      glue::l3xz::ELROB2022::OpenCyphalAnglePositionSensorBulkReader & open_cyphal_angle_position_sensor_bulk_reader,
-                      glue::l3xz::ELROB2022::OpenCyphalBumperSensorBulkReader & open_cyphal_bumper_sensor_bulk_reader,
-                      std::shared_ptr<l3xz::RosBridgeNode> ros_brigde_node)
+                      glue::l3xz::ELROB2022::OpenCyphalBumperSensorBulkReader & open_cyphal_bumper_sensor_bulk_reader)
 {
   if (!open_cyphal_node.subscribe<uavcan::node::Heartbeat_1_0<>>([](CanardRxTransfer const & transfer)
   {
@@ -451,30 +307,6 @@ bool init_open_cyphal(phy::opencyphal::Node & open_cyphal_node,
   }
 
 
-  if (!open_cyphal_node.subscribe<uavcan::primitive::scalar::Real32_1_0<1002>>([&open_cyphal_angle_position_sensor_bulk_reader](CanardRxTransfer const & transfer)
-  {
-    uavcan::primitive::scalar::Real32_1_0<1002> const as5048_a_angle = uavcan::primitive::scalar::Real32_1_0<1002>::deserialize(transfer);
-    open_cyphal_angle_position_sensor_bulk_reader.update_femur_angle(transfer.metadata.remote_node_id, as5048_a_angle.data.value);
-    //printf("[DEBUG] [%d] Angle[AS5048 A] = %f", transfer.metadata.remote_node_id, as5048_a_angle.data.value);
-  }))
-  {
-    printf("[ERROR] init_open_cyphal failed to subscribe to 'uavcan::primitive::scalar::Real32_1_0<1002>'");
-    return false;
-  }
-
-
-  if (!open_cyphal_node.subscribe<uavcan::primitive::scalar::Real32_1_0<1003>>([&open_cyphal_angle_position_sensor_bulk_reader](CanardRxTransfer const & transfer)
-  {
-    uavcan::primitive::scalar::Real32_1_0<1003> const as5048_b_angle = uavcan::primitive::scalar::Real32_1_0<1003>::deserialize(transfer);
-    open_cyphal_angle_position_sensor_bulk_reader.update_tibia_angle(transfer.metadata.remote_node_id, as5048_b_angle.data.value);
-    //printf("[DEBUG] [%d] Angle[AS5048 B] = %f", transfer.metadata.remote_node_id, as5048_b_angle.data.value);
-  }))
-  {
-    printf("[ERROR] init_open_cyphal failed to subscribe to 'uavcan::primitive::scalar::Real32_1_0<1003>'");
-    return false;
-  }
-
-
   if (!open_cyphal_node.subscribe<uavcan::primitive::scalar::Bit_1_0<1004>>([&open_cyphal_bumper_sensor_bulk_reader](CanardRxTransfer const & transfer)
   {
     uavcan::primitive::scalar::Bit_1_0<1004> const tibia_endpoint_switch = uavcan::primitive::scalar::Bit_1_0<1004>::deserialize(transfer);
@@ -485,20 +317,6 @@ bool init_open_cyphal(phy::opencyphal::Node & open_cyphal_node,
     printf("[ERROR] init_open_cyphal failed to subscribe to 'uavcan::primitive::scalar::Bit_1_0<1004>'");
     return false;
   }
-
-
-  if (!open_cyphal_node.subscribe<uavcan::primitive::scalar::Integer16_1_0<3000U>>([&ros_brigde_node](CanardRxTransfer const & transfer)
-  {
-    uavcan::primitive::scalar::Integer16_1_0<3000U> const radiation_value = uavcan::primitive::scalar::Integer16_1_0<3000U>::deserialize(transfer);
-    printf("[INFO] [%d] Radiation Tick Count %d", transfer.metadata.remote_node_id, radiation_value.data.value);
-
-    ros_brigde_node->publish_radiation_tick_count(radiation_value.data.value);
-  }))
-  {
-    printf("[ERROR] init_open_cyphal failed to subscribe to 'uavcan::primitive::scalar::Integer16_1_0<3000U>'");
-    return false;
-  }
-
 
   return true;
 }

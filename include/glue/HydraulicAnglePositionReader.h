@@ -4,41 +4,49 @@
  * Contributors: https://github.com/107-systems/l3xz_io/graphs/contributors.
  */
 
-#ifndef GAIT_CONTROLLER_STATE_H_
-#define GAIT_CONTROLLER_STATE_H_
+#ifndef GLUE_L3XZ_ELROB2022_OPEN_CYPHAL_ANGLE_POSITION_SENSOR_BULK_READER_H_
+#define GLUE_L3XZ_ELROB2022_OPEN_CYPHAL_ANGLE_POSITION_SENSOR_BULK_READER_H_
 
 /**************************************************************************************
  * INCLUDES
  **************************************************************************************/
 
-#include <common/kinematic/Engine.h>
-#include "../GaitControllerInput.h"
-#include "../GaitControllerOutput.h"
+#include <mutex>
+
+#include <types/LegJointKey.h>
+
+#include <phy/opencyphal/Node.hpp>
 
 /**************************************************************************************
  * NAMESPACE
  **************************************************************************************/
 
-namespace gait::state
+namespace glue
 {
 
 /**************************************************************************************
  * CLASS DECLARATION
  **************************************************************************************/
 
-class StateBase
+class HydraulicAnglePositionReader
 {
 public:
-  virtual ~StateBase() { }
-  virtual void onEnter() { }
-  virtual void onExit() { }
-  virtual std::tuple<StateBase *, ControllerOutput> update(common::kinematic::Engine const & engine, ControllerInput const & input, ControllerOutput const & prev_output) = 0;
+  HydraulicAnglePositionReader(phy::opencyphal::Node & node);
+
+  std::map<LegJointKey, float> doBulkRead();
+
+private:
+  std::mutex _mtx;
+  std::map<LegJointKey, float> _leg_angle_position_map;
+
+  static LegJointKey femur_toLegJointKey(CanardNodeID const node_id);
+  static LegJointKey tibia_toLegJointKey(CanardNodeID const node_id);
 };
 
 /**************************************************************************************
  * NAMESPACE
  **************************************************************************************/
 
-} /* gait::state */
+} /* glue */
 
-#endif /* GAIT_CONTROLLER_STATE_H_ */
+#endif /* GLUE_L3XZ_ELROB2022_OPEN_CYPHAL_ANGLE_POSITION_SENSOR_BULK_READER_H_ */

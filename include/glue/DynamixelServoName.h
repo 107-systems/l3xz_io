@@ -4,54 +4,49 @@
  * Contributors: https://github.com/107-systems/l3xz_io/graphs/contributors.
  */
 
-#ifndef GLUE_L3XZ_ELROB2022_OPEN_CYPHAL_ANGLE_POSITION_SENSOR_H_
-#define GLUE_L3XZ_ELROB2022_OPEN_CYPHAL_ANGLE_POSITION_SENSOR_H_
+#ifndef GLUE_DYNAMIXEL_SERVO_NAME_H_
+#define GLUE_DYNAMIXEL_SERVO_NAME_H_
 
 /**************************************************************************************
  * INCLUDES
  **************************************************************************************/
 
-#include <common/sensor/interface/AnglePositionSensor.h>
-
-#include <Const.h>
+#include <driver/dynamixel/Dynamixel.h>
 
 /**************************************************************************************
  * NAMESPACE
  **************************************************************************************/
 
-namespace glue::l3xz::ELROB2022
+namespace glue
 {
-
-/**************************************************************************************
- * CLASS DECLARATION
- **************************************************************************************/
-
-class OpenCyphalAnglePositionSensor : public common::sensor::interface::AnglePositionSensor
-{
-public:
-  OpenCyphalAnglePositionSensor(std::string const & name)
-  : AnglePositionSensor(name)
-  , _angle_deg{std::nullopt}
-  { }
-
-  virtual std::optional<float> get() const override { return _angle_deg; }
-
-  void update(float const angle_deg) { _angle_deg = angle_deg; }
-
-private:
-  std::optional<float> _angle_deg;
-};
 
 /**************************************************************************************
  * TYPEDEF
  **************************************************************************************/
 
-typedef std::shared_ptr<OpenCyphalAnglePositionSensor> SharedOpenCyphalAnglePositionSensor;
+enum class DynamixelServoName
+{
+  LeftFront_Coxa,
+  LeftMiddle_Coxa,
+  LeftBack_Coxa,
+  RightBack_Coxa,
+  RightMiddle_Coxa,
+  RightFront_Coxa,
+  Head_Pan,
+  Head_Tilt,
+};
+
+/**************************************************************************************
+ * FUNCTION DECLARATION
+ **************************************************************************************/
+
+DynamixelServoName toServoName(dynamixel::Dynamixel::Id const id);
+dynamixel::Dynamixel::Id toServoId(DynamixelServoName const name);
 
 /**************************************************************************************
  * NAMESPACE
  **************************************************************************************/
 
-} /* glue::l3xz::ELROB2022 */
+} /* glue */
 
-#endif /* GLUE_L3XZ_ELROB2022_OPEN_CYPHAL_ANGLE_POSITION_SENSOR_H_ */
+#endif /* GLUE_DYNAMIXEL_SERVO_NAME_H_ */
